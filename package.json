@@ -1,0 +1,17 @@
+{
+  "name": "ur5_state_server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "scripts/ur5_state_server.js",
+  "dependencies": {
+    "math3d": "^0.2.2",
+    "quaternion": "^2.0.0",
+    "rosnodejs": "^2.1.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT"
+}
