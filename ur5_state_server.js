@@ -1,16 +1,35 @@
 const rosnodejs = require('rosnodejs')
-// const mat3d = require('math3d')
 const Quaternion = require('quaternion')
 // rosnodejs.loadAllPackages()
+const UrMsgs = rosnodejs.require('ur_msgs')
 const geometryMsgs = rosnodejs.require('geometry_msgs')
 const sensorMsgs = rosnodejs.require('sensor_msgs')
+const stdMsgs = rosnodejs.require('std_msgs')
 const URStateData = require('../ur-state-receiver')
-const urStateDataIns = new URStateData(30003, '10.8.8.133')
+const urStateDataIns = new URStateData(30003, '192.168.1.5')
 
 // Joint position vector
 var jointState = new sensorMsgs.msg.JointState()
 
+// Cartesian position msg
 var currentCartPose = new geometryMsgs.msg.Pose()
+
+// I/O msg
+var IOmsg = new UrMsgs.msg.IOStates()
+const digIOMask = [1, 2, 4, 8, 16, 32, 64, 128]
+
+// Robot modes
+const robotModes = ['ROBOT_MODE_DISCONNECTED', 'ROBOT_MODE_CONFIRM_SAFETY', 'ROBOT_MODE_BOOTING', 'ROBOT_MODE_POWER_OFF',
+  'ROBOT_MODE_POWER_ON', 'ROBOT_MODE_IDLE', 'ROBOT_MODE_BACKDRIVE', 'ROBOT_MODE_RUNNING', 'ROBOT_MODE_UPDATING_FIRMWARE'
+]
+var robotMode = new stdMsgs.msg.String()
+
+// safety modes
+const safetyModes = ['SAFETY_MODE_NORMAL', 'SAFETY_MODE_REDUCED', 'SAFETY_MODE_PROTECTIVE_STOP', 'SAFETY_MODE_RECOVERY',
+  'SAFETY_MODE_SAFEGUARD_STOP', 'SAFETY_MODE_SYSTEM_EMERGENCY_STOP', 'SAFETY_MODE_ROBOT_EMERGENCY_STOP', 'SAFETY_MODE_VIOLATION',
+  'SAFETY_MODE_FAULT'
+]
+var safetyMode = new stdMsgs.msg.String()
 
 // Convert RPY to Quaternion
 function RPYToQuaternion (Rx, Ry, Rz) {
@@ -23,13 +42,20 @@ function RPYToQuaternion (Rx, Ry, Rz) {
 rosnodejs.initNode('/ur5_state_server', {onTheFly: true})
 .then((nh) => {
   const jointStatePublisher = nh.advertise('/joint_states', 'sensor_msgs/JointState')
+  const IOPublisher = nh.advertise('/robot_state/IOStates', 'ur_msgs/IOStates')
+  const robotModePublisher = nh.advertise('/robot_state/RobotMode', 'std_msgs/String')
+  const safetyModePublisher = nh.advertise('/robot_state/SafetyMode', 'std_msgs/String')
   setInterval(() => {
     jointStatePublisher.publish(jointState)
+    IOPublisher.publish(IOmsg)
+    robotModePublisher.publish(robotMode)
+    safetyModePublisher.publish(safetyMode)
   }, 8)
 })
 // const nh = rosnodejs.nh
 
 urStateDataIns.on('data', function (data) {
+  // Joint state
   jointState.header.stamp = rosnodejs.Time.now()
   jointState.name[0] = 'shoulder_pan_joint'
   jointState.name[1] = 'shoulder_lift_joint'
@@ -43,6 +69,8 @@ urStateDataIns.on('data', function (data) {
   jointState.position[3] = data.actJ4pos
   jointState.position[4] = data.actJ5pos
   jointState.position[5] = data.actJ6pos
+
+  // Cartesian position
   currentCartPose.position.x = data.actXXpos
   currentCartPose.position.y = data.actYYpos
   currentCartPose.position.z = data.actZZpos
@@ -51,4 +79,28 @@ urStateDataIns.on('data', function (data) {
   currentCartPose.orientation.x = orientationInQuaternion.x
   currentCartPose.orientation.y = orientationInQuaternion.y
   currentCartPose.orientation.z = orientationInQuaternion.z
-})
+
+  // Digital inputs
+  for (var i = 0; i < digIOMask.length; i++){
+    var Digital = new UrMsgs.msg.Digital()
+    Digital.pin = i
+    Digital.state = data.digInput & digIOMask[i]
+    IOmsg.digital_in_states[i] = Digital
+  }
+
+  // Digital outputs
+  for (var i = 0; i < digIOMask.length; i++){
+    var Digital = new UrMsgs.msg.Digital()
+    Digital.pin = i
+    Digital.state = data.digOutput & digIOMask[i]
+    IOmsg.digital_out_states[i] = Digital
+  }
+
+  // Robot mode
+  robotMode.data = robotModes[data.robotMode]
+
+  // Safety mode
+  safetyMode.data = safetyModes[data.safetyMode - 1]
+
+
+}) 
