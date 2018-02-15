@@ -6,7 +6,7 @@ const geometryMsgs = rosnodejs.require('geometry_msgs')
 const sensorMsgs = rosnodejs.require('sensor_msgs')
 const stdMsgs = rosnodejs.require('std_msgs')
 const URStateData = require('../ur-state-receiver')
-const urStateDataIns = new URStateData(30003, '192.168.1.5')
+const urStateDataIns = new URStateData(30003, '169.254.229.7')
 
 // Joint position vector
 var jointState = new sensorMsgs.msg.JointState()
@@ -42,11 +42,13 @@ function RPYToQuaternion (Rx, Ry, Rz) {
 rosnodejs.initNode('/ur5_state_server', {onTheFly: true})
 .then((nh) => {
   const jointStatePublisher = nh.advertise('/joint_states', 'sensor_msgs/JointState')
+  const cartPosePublisher = nh.advertise('robot_state/CartPose', 'geometry_msgs/Pose')
   const IOPublisher = nh.advertise('/robot_state/IOStates', 'ur_msgs/IOStates')
   const robotModePublisher = nh.advertise('/robot_state/RobotMode', 'std_msgs/String')
   const safetyModePublisher = nh.advertise('/robot_state/SafetyMode', 'std_msgs/String')
   setInterval(() => {
     jointStatePublisher.publish(jointState)
+    cartPosePublisher.publish(currentCartPose)
     IOPublisher.publish(IOmsg)
     robotModePublisher.publish(robotMode)
     safetyModePublisher.publish(safetyMode)
