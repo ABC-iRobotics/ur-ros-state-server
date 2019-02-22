@@ -6,7 +6,7 @@ const geometryMsgs = rosnodejs.require('geometry_msgs')
 const sensorMsgs = rosnodejs.require('sensor_msgs')
 const stdMsgs = rosnodejs.require('std_msgs')
 const URStateData = require('../ur-state-receiver')
-const urStateDataIns = new URStateData(30003, '169.254.229.7')
+const urStateDataIns = new URStateData(30003, 'localhost')
 
 // Joint position vector
 var jointState = new sensorMsgs.msg.JointState()
