@@ -4,6 +4,9 @@
   "description": "",
   "main": "scripts/ur5_state_server.js",
   "dependencies": {
+    "@hapi/joi": "16.1.5",
+    "dotenv": "8.1.0",
+    "express": "4.17.1",
     "math3d": "^0.2.2",
     "quaternion": "^2.0.0",
     "rosnodejs": "^2.1.1"
